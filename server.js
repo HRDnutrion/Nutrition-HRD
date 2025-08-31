@@ -25,7 +25,7 @@ db.run(`CREATE TABLE IF NOT EXISTS messages (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )`);
 
-// POST endpoint pour le formulaire
+// Endpoint POST pour le formulaire
 app.post('/contact', (req, res) => {
   const { name, email, message } = req.body;
 
@@ -34,6 +34,39 @@ app.post('/contact', (req, res) => {
     [name, email, message],
     function(err) {
       if (err) {
+        console.error(err.message);
+        return res.status(500).json({ error: 'Erreur base de données' });
+      }
+
+      // Envoyer par mail
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_USER,
+        subject: `Nouveau message de ${name}`,
+        text: `Nom: ${name}\nEmail: ${email}\nMessage: ${message}`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) console.error(error);
+        else console.log('Email envoyé: ' + info.response);
+      });
+
+      res.json({ message: 'Message reçu et envoyé par mail' });
+    }
+  );
+});
+
+app.listen(port, () => {
+  console.log(`Serveur Node.js en écoute sur le port ${port}`);
+});
         console.error(err.message);
         return res.status(500).json({ error: 'Erreur base de données' });
       }
